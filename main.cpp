@@ -10,7 +10,7 @@ int main()
 	clock_t pt = 0, st = 0;
 	int n = 1000000, p = 4;
 
-
+/*
 	int *a = new int[n];
 	int *b = new int[n];
 	int *c = new int[n];
@@ -63,11 +63,7 @@ int main()
 	delete[]a;
 	delete[]b;
 	delete[]c;
-
-
-
-
-
+*/
 
 
 

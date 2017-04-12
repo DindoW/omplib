@@ -11,3 +11,4 @@ Debug/vc140.idb
 omplib.VC.db
 *.vcxproj
 omplib.vcxproj.filters
+*.opendb
