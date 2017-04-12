@@ -1,0 +1,13 @@
+Debug/omplib.ilk
+*.exe
+*.suo
+Debug/main.obj
+*.log
+Debug/omplib.pdb
+*.tlog
+Debug/vc140.idb
+*.pdb
+*.sln
+omplib.VC.db
+*.vcxproj
+omplib.vcxproj.filters
