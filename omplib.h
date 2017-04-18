@@ -10,7 +10,8 @@
 #include <iomanip>
 #endif // DEBUG
 
-template <typename T> void psort(T *arr, int n, int p, int sortType = 1)
+template <typename T> 
+void psort(T *arr, int n, int p, int sortType = 1)
 {
 	/*
 	*(1)均匀划分: n个元素均匀地划分成p段，每台处理器有n/p个元素
@@ -229,5 +230,72 @@ template <typename T> void psort(T *arr, int n, int p, int sortType = 1)
 	delete[] pivot_element;
 	delete[] mergeIndx;
 	delete[] tmp;
+}
+
+template <typename T> 
+void pMatrixTrans(T **a, T **b, int m, int n)
+{
+	assert(a != NULL && b != NULL);
+
+#pragma omp parallel for shared(a, b) schedule(dynamic)
+	for (int i = 0; i < m; i++)
+		for (int j = 0; j < n; j++)
+			b[j][i] = a[i][j];
+#ifdef DEBUG
+	std::cout << "src:" << std::endl;
+	for (int i = 0; i < m; i++)
+	{
+		for (int j = 0; j < n; j++)
+			std::cout << std::setw(4) << a[i][j];
+		std::cout << std::endl;
+	}
+	std::cout << "res:" << std::endl;
+	for (int i = 0; i < n; i++)
+	{
+		for (int j = 0; j < m; j++)
+			std::cout << std::setw(4) << b[i][j];
+		std::cout << std::endl;
+	}
+#endif // DEBUG
+}
+
+template <typename T> 
+void pMatrixMult(T **a, T **b, T**c, int m, int s, int n, int p = omp_get_max_threads())
+{
+	cout << p << endl;
+	assert(a != NULL && b != NULL && c != NULL);
+	assert(m > 0 && s > 0 && n > 0 && p > 0);
+
+	//转置B矩阵，保证cache命中率
+	T **tmpB = new T*[n];
+	for (int i = 0; i < n; i++)
+		tmpB[i] = new T[s];
+	pMatrixTrans(b, tmpB, s, n);
+
+	omp_set_num_threads(p);
+	if (m > n)
+	{
+#pragma omp parallel for shared(a, tmpB, c) schedule(dynamic)
+		for (int i = 0; i < m; i++)
+			for (int j = 0; j < n; j++)
+			{
+				T temp = 0;
+				for (int k = 0; k < s; k++)
+					temp += a[i][k] * tmpB[j][k];
+				c[i][j] = temp;
+			}
+	}
+	else
+	{
+#pragma omp parallel for shared(a, tmpB, c) schedule(dynamic)
+		for (int i = 0; i < n; i++)
+			for (int j = 0; j < m; j++)
+			{
+				T temp = 0;
+				for (int k = 0; k < s; k++)
+					temp += tmpB[i][k] * a[j][k];
+				c[j][i] = temp;
+			}
+	}
 }
 
