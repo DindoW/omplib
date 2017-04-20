@@ -4,6 +4,8 @@
 #include <algorithm>
 #include <assert.h>
 
+const double EPSINON = 0.00000001;
+
 //#define DEBUG
 #ifdef DEBUG	//*******输出调试信息
 #include <iostream>
@@ -11,7 +13,7 @@
 #endif // DEBUG
 
 template <typename T> 
-void psort(T *arr, int n, int p, int sortType = 1)
+void psort(T *arr, int n, int p = omp_get_max_threads(), int sortType = 1)
 {
 	/*
 	*(1)均匀划分: n个元素均匀地划分成p段，每台处理器有n/p个元素
@@ -233,10 +235,11 @@ void psort(T *arr, int n, int p, int sortType = 1)
 }
 
 template <typename T> 
-void pMatrixTrans(T **a, T **b, int m, int n)
+void pMatrixTrans(T **a, T **b, int m, int n, int p = omp_get_max_threads())
 {
 	assert(a != NULL && b != NULL);
 
+	omp_set_num_threads(p);
 #pragma omp parallel for shared(a, b) schedule(dynamic)
 	for (int i = 0; i < m; i++)
 		for (int j = 0; j < n; j++)
@@ -299,3 +302,6 @@ void pMatrixMult(T **a, T **b, T**c, int m, int s, int n, int p = omp_get_max_th
 	}
 }
 
+int sGaussElim(double **a, double *b, double *x, int n);
+
+int pGaussElim(double **a, double *b, double *x, int n, int p = omp_get_max_threads());

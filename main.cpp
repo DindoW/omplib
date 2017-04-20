@@ -2,6 +2,7 @@
 #include <time.h>
 #include <iostream>
 #include <functional>
+#include <iomanip>
 
 using namespace std;
 
@@ -115,7 +116,7 @@ int main()
 	{//*****验证计算结果
 		for (int i = 0; i < m; i++)
 			for (int j = 0; j < n; j++)
-				if (c[i][j] != d[i][j])
+				if (fabs(c[i][j] - d[i][j]) <= EPSINON)
 				{
 					cout << "Error!" << endl;
 					i = m;
@@ -124,7 +125,85 @@ int main()
 	}
 */
 
+/*
+	int n = 100;
+	double **a = new double*[n];
+	for (int i = 0; i < n; i++)
+		a[i] = new double[n];
+	double *b = new double[n];
+	double **aa = new double*[n];
+	for (int i = 0; i < n; i++)
+		aa[i] = new double[n];
+	double *bb = new double[n];
+	double *x = new double[n];
+	double *xx = new double[n];
 
+	{//*******初始化
+		srand((unsigned)time(NULL));
+		//srand(4);
+		for (int i = 0; i < n; i++)
+		{
+			bb[i] = b[i] = rand() % n;
+			for (int j = 0; j < n; j++)
+				aa[i][j] = a[i][j] = (double)(rand() % n) / 10 + rand() % n;
+		}
+#ifdef DEBUG
+		cout << "A & B:" << endl;
+		for (int i = 0; i < n; i++)
+		{
+			for (int j = 0; j < n; j++)
+				cout << setprecision(3) << setw(8) << a[i][j];
+			cout << setw(8) << b[i] << endl;
+		}
+#endif // DEBUG
+	}
+
+	{//*****串行排序时间
+		st -= clock();
+		if (sGaussElim(aa, bb, xx, n) == -1)
+			cout << "Matrix rank error!" << endl;
+		st += clock();
+	}
+
+	{//*****验证串行计算结果
+#ifdef DEBUG
+		cout << "Simulation A * XX = B :" << endl;
+#endif // DEBUG
+		for (int i = 0; i < n; i++)
+		{
+			double res = 0;
+			for (int j = 0; j < n; j++)
+			{
+				res += xx[j] * a[i][j];
+			}
+			if (abs(res - b[i]) > EPSINON)
+			{
+				cout << " Serial Error!";
+			}
+#ifdef DEBUG
+			cout << setiosflags(ios::fixed) << setprecision(3) << setw(8) << res;
+#endif // DEBUG
+		}
+		cout << endl;
+	}
+
+	{//*****并行排序时间
+		pt -= clock();
+		if (pGaussElim(a, b, x, n) == -1)
+			cout << "Matrix rank error!" << endl;
+		pt += clock();
+	}
+
+	{//*****验证计算结果
+		for (int i = 0; i < n; i++)
+			if (fabs(x[i] - xx[i]) > EPSINON)
+			{
+				cout << " Parallel Error!" << endl;
+				break;
+			}
+		cout << endl;
+	}
+*/
 
 	cout << "serial time:" << (double)st / CLOCKS_PER_SEC << "s." << endl;
 	cout << "parallel time:" << (double)pt / CLOCKS_PER_SEC << "s." << endl;

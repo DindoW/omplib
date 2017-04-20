@@ -12,3 +12,4 @@ omplib.VC.db
 *.vcxproj
 omplib.vcxproj.filters
 *.opendb
+/Debug/omplib.obj
