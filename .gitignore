@@ -13,3 +13,4 @@ omplib.VC.db
 omplib.vcxproj.filters
 *.opendb
 /Debug/omplib.obj
+*.enc

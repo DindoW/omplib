@@ -3,8 +3,13 @@
 #include <stdlib.h>
 #include <algorithm>
 #include <assert.h>
+#include <complex>
 
-const double EPSINON = 0.00000001;
+
+
+const double EPSINON = 0.0001;
+const double PI = acos(-1.0);
+typedef std::complex<double> CM;
 
 //#define DEBUG
 #ifdef DEBUG	//*******输出调试信息
@@ -305,3 +310,7 @@ void pMatrixMult(T **a, T **b, T**c, int m, int s, int n, int p = omp_get_max_th
 int sGaussElim(double **a, double *b, double *x, int n);
 
 int pGaussElim(double **a, double *b, double *x, int n, int p = omp_get_max_threads());
+
+CM* sfft(const double *x, const int n);
+
+CM* pfft(double *x, const int n, int p = omp_get_max_threads());

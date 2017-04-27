@@ -126,6 +126,7 @@ int main()
 */
 
 /*
+//线性方程组求解
 	int n = 100;
 	double **a = new double*[n];
 	for (int i = 0; i < n; i++)
@@ -204,6 +205,57 @@ int main()
 		cout << endl;
 	}
 */
+
+
+//快速傅里叶变换
+	int n = 2 << 10;
+	double *x = new double[n];
+	CM *sres, *pres;
+
+#ifdef DEBUG
+	cout.setf(ios::fixed);
+	cout.precision(3);
+	cout.setf(ios::showpos);
+#endif // DEBUG
+
+	//*******初始化
+	{
+		for (int i = 0; i < n; i++)
+			x[i] = (double)rand() / 10 + rand();
+			//x[i] = i;
+	}
+
+	//*****串行排序时间
+	{
+		st -= clock();
+		sres = sfft(x, n);
+		st += clock();
+	}
+
+	//******并行排序时间
+	{
+		pt -= clock();
+		pres = pfft(x, n);
+		pt += clock();
+	}
+
+	//*******验证排序结果
+	{
+#ifdef DEBUG
+		cout << "The s_result are as follows：" << endl;
+		for (int i = 0; i < n; i++)
+			cout << sres[i] << endl;
+		cout << "The p_result are as follows：" << endl;
+		for (int i = 0; i < n; i++)
+			cout << pres[i] << endl;
+#endif // DEBUG
+		for (int i = 0; i < n; i++)
+			if (fabs(sres[i].real() - pres[i].real()) > EPSINON || fabs(sres[i].imag() - pres[i].imag()) > EPSINON)
+			{
+				cout << "ERROR!" << i << endl;
+				break;
+			}
+	}
 
 	cout << "serial time:" << (double)st / CLOCKS_PER_SEC << "s." << endl;
 	cout << "parallel time:" << (double)pt / CLOCKS_PER_SEC << "s." << endl;
