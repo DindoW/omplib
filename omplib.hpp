@@ -31,8 +31,10 @@ namespace par
 		*(8)归并排序: 各处理器使用归并排序将所接收的诸段施行排序
 		*/
 		assert(arr != NULL);
-		assert(n % p == 0);
 		assert(n > 0);
+
+		while (n % p || n / p < p)
+			p--;
 
 		int len = n / p;
 		int square_p = p * p;
@@ -266,14 +268,14 @@ namespace par
 		return b;
 	}
 
-	template <typename T1, typename T2>
-	void pMatrixMult(T1 **a, T1 **b, T2**c, int m, int s, int n, int p = omp_get_max_threads())
+	template <typename T1, typename T2, typename T3>
+	void pMatrixMult(T1 **a, T2 **b, T3**c, int m, int s, int n, int p = omp_get_max_threads())
 	{
 		assert(a != NULL && b != NULL && c != NULL);
 		assert(m > 0 && s > 0 && n > 0 && p > 0);
 
 		//转置B矩阵，保证cache命中率
-		T1 **tmpB;
+		T2 **tmpB;
 		tmpB = pMatrixTrans(b, s, n);
 
 		omp_set_num_threads(p);
@@ -310,6 +312,9 @@ namespace par
 	template <typename T>
 	double* pGaussElim(T **a, T *b, int n, unsigned int p = omp_get_max_threads())
 	{
+		assert(a != NULL && b != NULL);
+		assert(n > 0 && p > 0);
+
 		double max;
 		int picked;
 		int *marked = new int[n];
