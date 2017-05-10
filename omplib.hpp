@@ -4,12 +4,7 @@
 #include <algorithm>
 #include <assert.h>
 #include <complex>
-
-//#define DEBUG
-#ifdef DEBUG	//*******输出调试信息
 #include <iostream>
-#include <iomanip>
-#endif // DEBUG
 
 namespace par
 {
@@ -20,16 +15,6 @@ namespace par
 	template <typename T>
 	void psort(T *arr, int n, int p = omp_get_max_threads(), int sortType = 1)
 	{
-		/*
-		*(1)均匀划分: n个元素均匀地划分成p段，每台处理器有n/p个元素
-		*(2)局部排序: 各处理器利用串行排序算法，排序n/p个数
-		*(3)正则采样: 每台处理器各从自己的有序段中选取p个样本元素(各段的第1、n/p^2+1、2n/p^2+1、…个元素)
-		*(4)样本排序: 用一台处理器将所有p^2个样本元素用串行排序算法排序之
-		*(5)选择主元: 用一台处理器选取p-1个主元，并将其播送给其余处理器(第p+1、2p+1、…个元素)
-		*(6)主元划分: 各处理器按主元将各自的有序段划分成p段
-		*(7)全局交换: 各处理器将其辖段按段号交换到对应的处理器中
-		*(8)归并排序: 各处理器使用归并排序将所接收的诸段施行排序
-		*/
 		assert(arr != NULL);
 		assert(n > 0);
 
@@ -56,15 +41,6 @@ namespace par
 			/***********2：局部排序*********/
 			int startPos = tid * len;	//每段的起始位置
 			std::sort(arr + startPos, arr + startPos + len);
-#ifdef DEBUG	//**********测试输出
-#pragma omp single
-			for (i = 0; i < p; i++)
-			{
-				for (j = i * len; j < (i + 1) * len; j++)
-					std::cout << setw(4) << arr[j];
-			}
-#endif // DEBUG
-
 			/***********3：正则采样**********/
 			k = tid * p;		//每段的样本的起始存储位置
 			j = 0;
@@ -73,35 +49,14 @@ namespace par
 				tmp[k + j] = arr[i];		//每段选出P个样本
 				j++;
 			}
-#ifdef DEBUG	//**********测试输出
-#pragma omp single
-			{
-				for (i = 0; i < p; i++)
-				{
-					std::cout << endl << i << "tid: ";
-					for (j = 0; j < p; j++)
-						std::cout << setw(4) << tmp[i * p + j];
-				}
-			}
-#endif // DEBUG
 #pragma omp barrier
 #pragma omp single
 			{
 				/*********4：样本排序**********/
 				std::sort(tmp, tmp + square_p);
-#ifdef DEBUG	//**********测试输出
-				std::cout << endl << "sort of sample: " << endl;
-				for (k = 0; k < square_p; k++)
-					std::cout << setw(4) << tmp[k];
-#endif // DEBUG
 				/*********5：选择主元**********/
 				for (i = p, j = 0; i < square_p; i += p)	//用一台处理器选取p-1个主元
 					pivot_element[j++] = tmp[i];
-#ifdef DEBUG	//**********测试输出
-				std::cout << endl << "pivot_element: " << endl;
-				for (j = 0; j < p - 1; j++)	//共有p-1个主元
-					std::cout << setw(4) << pivot_element[j];
-#endif // DEBUG
 			}
 			/*********6：主元划分**********/
 			sgm_pvt_elm[tid][0] = startPos;	//各个处理器处理的首位置，为第一个位置的前一位
@@ -115,18 +70,6 @@ namespace par
 				}
 				sgm_pvt_elm[tid][j + 1] = k;	//存储主元划分的位置
 			}
-#ifdef DEBUG	//**********测试输出
-#pragma omp barrier
-#pragma omp single
-			{
-				for (i = 0; i < p; i++)
-				{
-					std::cout << endl << "sgm_pvt_elm_pos_threads: " << i << endl;
-					for (j = 0; j < p + 1; j++)
-						std::cout << setw(4) << sgm_pvt_elm[i][j];
-				}
-			}
-#endif // DEBUG		
 			/************7全局交换**************/
 			mergeIndx[tid] = 0;		//merge_pos[p] = 0; 申请空间时处理，最后一个元素为0
 #pragma omp barrier
@@ -137,21 +80,8 @@ namespace par
 #pragma omp barrier
 #pragma omp single
 			{
-#ifdef DEBUG	//*******测试输出
-				std::cout << endl << "merge_length: " << endl;
-				for (i = 0; i < p + 1; i++)
-					std::cout << setw(4) << mergeIndx[i];
-#endif // DEBUG
 				for (i = 1; i <= p; i++)
 					mergeIndx[i] = mergeIndx[i] + mergeIndx[i - 1];	//每个处理器归并结果存放区域	
-#ifdef DEBUG	//*******测试输出
-				std::cout << endl << "merge_sort_begin_at: " << endl;
-				for (i = 0; i < p + 1; i++)
-					std::cout << setw(4) << mergeIndx[i];
-				std::cout << endl << "A: ";
-				for (i = 0; i < n; i++)
-					std::cout << setw(3) << arr[i];
-#endif // DEBUG
 			}
 			/************8归并排序**************/
 			T max;
@@ -175,20 +105,6 @@ namespace par
 					maxIndex = i;
 				}
 			}	//得到maxNumber和maxIndex
-#ifdef DEBUG	//**********测试输出
-#pragma omp critical
-			{
-				std::cout << endl << "tid::" << tid;
-				for (i = 0; i < p; i++)
-				{
-					std::cout << endl << "NO." << i << " from:" << index[i] << " to:" << endIndex[i] << endl;
-					for (j = index[i]; j <= endIndex[i]; j++)
-						std::cout << setw(4) << arr[j];
-				}
-				std::cout << endl << "max = " << max << " maxIndex = " << maxIndex;
-			}
-#endif // DEBUG
-
 			for (i = mergeIndx[tid]; i < mergeIndx[tid + 1]; i++)	//p路归并存放位置
 			{
 				T m = max;
@@ -207,21 +123,6 @@ namespace par
 			delete[] index;
 			delete[] endIndex;
 #pragma omp barrier
-#ifdef DEBUG	//**********测试输出
-#pragma omp single
-			{
-				std::cout << endl << "mergeIndx: ";
-				for (i = 0; i <= p; i++)
-					std::cout << setw(4) << mergeIndx[i];
-			}
-#pragma omp critical
-			{
-				std::cout << endl << "tid" << tid
-					<< "  start:" << mergeIndx[tid] << "  end:" << mergeIndx[tid + 1] << endl;
-				for (i = mergeIndx[tid]; i < mergeIndx[tid + 1]; i++)
-					std::cout << setw(4) << tmp[i];
-			}
-#endif // DEBUG
 			if (sortType)
 			{
 				for (i = startPos; i < startPos + len; i++)
@@ -364,21 +265,6 @@ namespace par
 		for (int i = 0; i < n; i++)	//求解x
 			x[pivot[i]] = b[i] / a[i][pivot[i]];
 
-
-#ifdef DEBUG
-		std::cout << std::endl << "after parallel Gauss-Jordan Elimination A & B & pivot :" << std::endl;
-		for (int i = 0; i < n; i++)
-		{
-			for (int j = 0; j < n; j++)
-				std::cout << std::setiosflags(std::ios::fixed) << std::setprecision(3) << std::setw(8) << a[i][j];
-			std::cout << std::setprecision(3) << std::setw(8) << b[i] << std::setw(6) << pivot[i] << std::endl;
-		}
-		std::cout << "X : " << std::endl;
-		for (int i = 0; i < n; i++)
-			std::cout << std::setw(8) << x[i];
-		std::cout << std::endl << "threads: " << p << std::endl;
-#endif // DEBUG
-
 		delete[]marked;
 		delete[]pivot;
 		return x;
@@ -387,6 +273,7 @@ namespace par
 	template <typename T>
 	CM* pfft(T *x, const int n, int p = omp_get_max_threads())
 	{
+		assert(x != NULL && n > 0);
 		if ((n & n - 1) != 0)   //n必须为2的幂
 		{
 			std::cout << "Number of x[N] must be a power of 2 !" << std::endl;
@@ -404,6 +291,7 @@ namespace par
 
 		double theta = 2 * PI / n;
 		int gap = n / p;
+		omp_set_num_threads(p);
 #pragma omp parallel for shared(src, ww) schedule(dynamic)
 		for (int i = 0; i < n; i++)     //************1*****位反存储及初始化
 		{
@@ -418,17 +306,6 @@ namespace par
 			src[j] = x[i];
 			ww[i] = CM(cos(theta * i), sin(theta * i));
 		}
-
-#ifdef DEBUG
-		std::cout << "The pfft begin： " << std::endl;
-		std::cout << "The w[N] are as follows： " << std::endl;
-		for (int i = 0; i < n; i++)
-			std::cout << ww[i] << std::endl;
-		std::cout << "After bit reversed change newx[N]: " << std::endl;
-		for (int i = 0; i < n; i++)
-			std::cout << src[i] << "   ";
-		std::cout << std::endl;
-#endif // DEBUG
 
 #pragma omp parallel shared(src, dst)
 		{
@@ -453,35 +330,13 @@ namespace par
 			}
 #pragma omp barrier
 
-#ifdef DEBUG
-#pragma omp single
-			{
-				std::cout << "after 2nd step the  ******** x[N] are as follows： " << std::endl;
-				for (int i = 0; i < n; i++)
-					std::cout << src[i] << std::endl;
-			}
-#endif // DEBUG
-
 			for (int s = 1; s <= (int)(log(p) / log(2)); s++)		//************3*****p个核需要的通信次数
 			{
 				int m = 1 << (s + (int)(log(gap) / log(2)));
 				CM w = ww[n / m];
-
-#ifdef DEBUG
-#pragma omp single
-				std::cout << " m : " << m << " w : " << n / m << std::endl;
-#endif // DEBUG
-
 				if (tid / (1 << (s - 1)) & 1)
 				{
 					CM z = ww[(startPos % (m / 2)) * n / m];
-
-#ifdef DEBUG
-#pragma omp critical
-					std::cout << "tid: " << tid << " newx[j + 1] : " << src[tid * (n / p) + 1]
-						<< "  z * w:  " << z * w << " newx * z : " << src[tid * (n / p) + 1] * z * w << std::endl;
-#endif // DEBUG
-
 					for (int j = startPos; j < startPos + gap; j++)
 					{
 						src[j] = z * src[j];
@@ -490,16 +345,6 @@ namespace par
 				}
 				int partnerPos = (tid ^ (1 << (s - 1))) * gap;
 #pragma omp barrier
-
-#ifdef DEBUG
-#pragma omp single
-				{
-					std::cout << "the **** " << s << " **** x[N] * w[N] = newx ****** are as follows： " << std::endl;
-					for (int i = 0; i < n; i++)
-						std::cout << src[i] << std::endl;
-				}
-#endif // DEBUG
-
 				if ((tid / (1 << (s - 1))) & 1)
 				{
 					for (int j = 0; j < gap; j++)
@@ -516,16 +361,6 @@ namespace par
 					src = newx[s % 2];
 					dst = newx[(s + 1) % 2];
 				}
-
-#ifdef DEBUG
-#pragma omp single
-				{
-					std::cout << "the *********** " << s << " ******** x[N] are as follows： " << std::endl;
-					for (int i = 0; i < n; i++)
-						std::cout << src[i] << std::endl;
-				}
-#endif // DEBUG
-
 			}
 		}
 		delete[]ww;
